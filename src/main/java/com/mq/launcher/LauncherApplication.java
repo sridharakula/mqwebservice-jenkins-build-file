@@ -11,7 +11,7 @@ tomcat server and then it checks for the Router.
  */
 
 @SpringBootApplication
-public class LauncherApplication {
+public class LauncherApplication { 
 
 	public static void main(String[] args) {
 		SpringApplication.run(LauncherApplication.class, args);
