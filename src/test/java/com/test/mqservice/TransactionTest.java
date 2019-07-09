@@ -18,13 +18,7 @@ import java.util.StringTokenizer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-public class TransactionTest extends CamelTestSupport {
-
-    @Override
-    protected RouteBuilder createRouteBuilder() throws Exception {
-        return new MessageRouter();
-
-    }
+public class TransactionTest{
 
     @Test
     @Description("Check for Valid Message")
