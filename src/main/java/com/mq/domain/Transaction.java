@@ -2,8 +2,10 @@ package com.mq.domain;
 
 import com.google.gson.Gson;
 
-import java.util.LinkedHashMap;
-import java.util.Vector;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.*;
 
 /*
 @author Sridhar Akula
@@ -11,20 +13,28 @@ This class is to handle Transaction attributes,
 parse message and validate message.
 
  */
-public class Transaction {
+public class Transaction implements Parser, Validator {
 
-    private String requestType="";
-    private String txnId="";
-    private String name="";
-    private String formatType="";
-    private String amount="";
-    private String currency="";
-    private String service="";
-    private String sourceCountryCode="";
-    private String referenceNumbers="";
-    private String executionDate="";
-    private String forexRate="";
+    private String msg;
 
+    private String requestType;
+    private String txnId;
+    private String name;
+    private String formatType;
+    private String amount;
+    private String currency;
+    private String service;
+    private String sourceCountryCode;
+    private String referenceNumbers;
+    private String executionDate;
+    private String forexRate;
+
+    private String restMessage = "Nothing found, all okay";
+    private String jsonData = "";
+
+    private boolean refNumberWithValidFormat;
+    private boolean executionDateWithValidFormat;
+    private boolean forexRateWithValidFormat;
 
     public String getRequestType() {
         return requestType;
@@ -114,134 +124,235 @@ public class Transaction {
         this.forexRate = forexRate;
     }
 
+    public String getJsonData() {
+        return jsonData;
+    }
+
+    public void setJsonData(String jsonData) { this.jsonData = jsonData;}
 
 
-    public void parse(String str){
+    public String getRestMessage () {return restMessage;}
 
-        //Transaction txn=new Transaction();
+    public void setRestMessage (String restMessage){ this.restMessage = restMessage; }
 
-        System.out.println("Message from Active MQ: "+str);
+    public boolean isRefNumberWithValidFormat() {
+        return refNumberWithValidFormat;
+    }
 
-        if (str!=null) {
-            String[] mq_message = str.split("\\n");
+    public void setRefNumberWithValidFormat(boolean refNumberWithValidFormat) {
+        this.refNumberWithValidFormat = refNumberWithValidFormat;
+    }
+
+    public boolean isExecutionDateWithValidFormat() {
+        return executionDateWithValidFormat;
+    }
+
+    public void setExecutionDateWithValidFormat(boolean executionDateWithValidFormat) {
+        this.executionDateWithValidFormat = executionDateWithValidFormat;
+    }
+
+    public boolean isForexRateWithValidFormat() {
+        return forexRateWithValidFormat;
+    }
+
+    public void setForexRateWithValidFormat(boolean forexRateWithValidFormat) {
+        this.forexRateWithValidFormat = forexRateWithValidFormat;
+    }
+
+
+
+    public Transaction(String msg) {
+        this.msg = msg;
+        System.out.print("Transaction:Constructor: Message from Queue :" + msg);
+
+    }
+
+    /*
+        Parses the message as per the business requirement.
+     */
+
+    public void parse () throws ParseException {
+
+        System.out.println("Transaction:parse:Message from Queue :" + msg);
+
+        String[] mq_message = msg.split("\\n");
+
+        try {
 
             mq_message[0] = mq_message[0].trim();
             mq_message[1] = mq_message[1].trim();
             mq_message[2] = mq_message[2].trim();
             mq_message[3] = mq_message[3].trim();
-
-            System.out.println("mq_message[0] :" + mq_message[0]);
-            System.out.println("mq_message[1] :" + mq_message[1]);
-            System.out.println("mq_message[2] :" + mq_message[2]);
-            System.out.println("mq_message[3] :" + mq_message[3]);
+/*
+            setRequestType(mq_message[0].substring(0, 1));
+            setTxnId(mq_message[0].substring(1, 23).trim());
+            setName(mq_message[0].substring(23, 43).trim());
+            setFormatType(mq_message[0].substring(43, 44).trim());
+            setAmount(mq_message[0].substring(44, 63).trim());
+            setCurrency(mq_message[0].substring(63, 66).trim());
+            setService(mq_message[0].substring(66, 69).trim());
+            setSourceCountryCode(mq_message[0].substring(69, 71).trim());
+*/
 
             setRequestType(mq_message[0].substring(0, 1));
-            System.out.println("requestType:" + mq_message[0].substring(0, 1));
+            setTxnId(mq_message[0].substring(1, 23));
+            setName(mq_message[0].substring(23, 43));
+            setFormatType(mq_message[0].substring(43, 44));
+            setAmount(mq_message[0].substring(44, 63));
+            setCurrency(mq_message[0].substring(63, 66));
+            setService(mq_message[0].substring(66, 69));
+            setSourceCountryCode(mq_message[0].substring(69, 71));
 
-            setTxnId(mq_message[0].substring(1, 23).trim());
-            System.out.println("txnId:" + mq_message[0].substring(1, 23).trim());
+            String msg1Delim = ":20:";
+            String msg2Delim = ":32A:";
+            String msg3Delim = ":36:";
 
+            if (!mq_message[1].startsWith(msg1Delim)){
+                throw new ParseException("Invalid Delimiter for ReferencesNumbers in Main Message");
+            }
 
-            setName(mq_message[0].substring(23, 43).trim());
-            System.out.println("Name:" + mq_message[0].substring(23, 43).trim());
+            if (!mq_message[2].startsWith(msg2Delim)){
+                throw new ParseException("Invalid Delimiter for ExecutionDate in Main Message");
+            }
 
-            //nameList.contains(name);
+            if (!mq_message[3].startsWith(msg3Delim)){
+                throw new ParseException("Invalid Delimiter for Forex rate Main Message");
+            }
 
-            setFormatType(mq_message[0].substring(43, 44).trim());
-            System.out.println("formatType:" + mq_message[0].substring(43, 44).trim());
+            setReferenceNumbers(mq_message[1].replace(msg1Delim, ""));
+            setExecutionDate(mq_message[2].replace(msg2Delim, ""));
+            setForexRate(mq_message[3].replace(msg3Delim, ""));
 
-            setAmount(mq_message[0].substring(44, 63).trim());
-            System.out.println("Amount:" + mq_message[0].substring(44, 63).trim());
+            System.out.println("Transaction:parse:After Replacement :"+this);
 
-            setCurrency(mq_message[0].substring(63, 66).trim());
-            System.out.println("currency:" + mq_message[0].substring(63, 66).trim());
+        } catch (ParseException exp) {
+            throw exp;
+        } catch (Exception exp) {
 
-            setService(mq_message[0].substring(66, 69).trim());
-            System.out.println("Service:" + mq_message[0].substring(66, 69).trim());
-
-            setSourceCountryCode(mq_message[0].substring(69, 71).trim());
-            System.out.println("sourceCountryCode:" + mq_message[0].substring(69, 71).trim());
-
-            setReferenceNumbers(mq_message[1]);
-            System.out.println("referenceNumbers||" + mq_message[1]);
-
-            setExecutionDate(mq_message[2]);
-            System.out.println("executionDate||" + mq_message[2]);
-
-            setForexRate(mq_message[3]);
-            System.out.println("forexRate||" + mq_message[3]);
-
-            //System.out.println("Txn Details:"+txn);
-            //return txn;
+            exp.printStackTrace();
+            throw new ParseException(exp.getMessage(), exp);
         }
+
+        //System.out.println("Transaction:parseBean:Txn Details:" + this);
+
+
     }
 
 
-    public String validate(){
+    /*
+    Validates the message as per business requirement.
+    This message will be sent to Webservice and also logged.
+     */
 
-        Vector<String> nameList = new Vector<String>();
+    public void validate ()  throws ValidationException {
+        System.out.println("Transaction:validate: Message after parse :" + this);
+        if (getRequestType().isEmpty()) {
+            throw new ValidationException("Mandatory field RequestType missing");
+        }
+        if (getTxnId().isEmpty()) {
+            throw new ValidationException("Mandatory field TransactionId missing");
+        }
+        if (getName().isEmpty()) {
+            throw new ValidationException("Mandatory field Name missing");
+        }
+        if (getFormatType().isEmpty()) {
+            throw new ValidationException("Mandatory field FormatType missing");
+        }
+        if (getAmount().isEmpty()) {
+            throw new ValidationException("Mandatory field Amount missing");
+        }
+        if (getCurrency().isEmpty()) {
+            throw new ValidationException("Mandatory field Currency missing");
+        }
+        if (getService().isEmpty()) {
+            throw new ValidationException("Mandatory field Service missing");
+        }
+        if (getSourceCountryCode().isEmpty()) {
+            throw new ValidationException("Mandatory field SourceCountryCode missing");
+        }
+
+        if (getReferenceNumbers().isEmpty() && getExecutionDate().isEmpty()) {
+            throw new ValidationException("Main Message is missing");
+        }
+
+        if (getReferenceNumbers().isEmpty()) {
+            throw new ValidationException("Mandatory field ReferencesNumbers in Main Message missing");
+        }
+
+        if (getExecutionDate().isEmpty()) {
+            throw new ValidationException("Mandatory field ExecutionDate in Main Message missing");
+        }
+
+        if (!getRequestType().equals("G")) {
+            throw new ValidationException("Invalid Request Type");
+        }
+
+
+        Set<String> nameList = new HashSet<String>();
         nameList.add("Mark Imaginary");
         nameList.add("Govind Real");
         nameList.add("Shakil Maybe");
         nameList.add("Chang Imagine");
         nameList.add("Roy Kumar");
 
-        Vector<String> ccode = new Vector<String>();
-        //ccode.addElement("DE");
-        //ccode.addElement("GB");
+        Set<String> ccode = new HashSet<String>();
         ccode.add("AT");
 
-        Vector<String> serviceCode = new Vector<String>();
+        Set<String> serviceCode = new HashSet<String>();
         serviceCode.add("ATZ");
-        //serviceCode.add("AUZ");
-        //serviceCode.add("ATC");
 
-        String checkWarningMessage="Ship dual FERT chem";
-        String restMessage=new String("Nothing found, all okay");
-        String shipmentMsg="Suspicious shipment";
-        String delim=",";
-        String delim1="DELIM";
+        String checkWarningMessage = "Ship dual FERT chem";
 
-        boolean bName=false;
-        boolean bExecDate=false;
-        boolean bCcode=false;
-        boolean bScode=false;
+        String shipmentMsg = "Suspicious shipment";
+        String delim = ",";
+        String delim1 = "DELIM";
 
-        bName= nameList.contains(getName());
-        System.out.println("bName :"+bName);
+        boolean bName = nameList.contains(getName().trim());
+        boolean bCcode = ccode.contains(getSourceCountryCode());
+        boolean bScode = serviceCode.contains(getService());
+        boolean bExecDate = getExecutionDate().contains(checkWarningMessage);
 
-        bCcode = ccode.contains(getSourceCountryCode());
-        System.out.println("bCcode :"+bCcode);
 
-        bScode=serviceCode.contains(getService());
-        System.out.println("bScode :"+bScode);
+        System.out.println("bName :"+bName+ " Name:"+getName().trim()+":");
+        System.out.println("bCcode :"+bCcode+" Country Code:"+getSourceCountryCode());
+        System.out.println("bScode :"+bScode+ "Source Country Code:"+getService());
+        System.out.println("bExecDate :"+bExecDate+" Execution Date:"+getExecutionDate());
 
-        if (getExecutionDate().contains(checkWarningMessage)){
-            bExecDate=true;
-        }
+        Map<String, String> msg_data = new HashMap<String, String>();
 
-        System.out.println("bExecDate :"+bExecDate);
-
-        LinkedHashMap <String, String> msg_data =  new LinkedHashMap<String, String>();
-
-        if (bName && bCcode && bScode && bExecDate){
-            StringBuffer buildMsg=new StringBuffer();
+        if (bName && bCcode && bScode && bExecDate) {
+            StringBuffer buildMsg = new StringBuffer();
             buildMsg.append(shipmentMsg).append(delim).append(getSourceCountryCode())
                     .append(delim).append(getService()).append(delim).append(getTxnId());
 
-            restMessage=buildMsg.toString();
-            msg_data.put("message",restMessage);
-       }
-        else {
-            msg_data.put("message",restMessage);
+            restMessage = buildMsg.toString();
+            //throw new ValidationException(restMessage);
+            msg_data.put("message", restMessage);
+        } else {
+            msg_data.put("message", restMessage);
         }
 
         com.google.gson.Gson gson = new Gson();
-        String json = gson.toJson(msg_data);
-        //String json = gson.toJson();
+        jsonData = gson.toJson(msg_data);
 
-        System.out.println("json: "+json);
 
-        return restMessage;
+        System.out.println("Transaction:validate:json :" + jsonData);
+
+    }
+
+    private void populateData(String values, Set<String> list) {
+        String[] tokens = values.split(",");
+        for (String value : tokens) {
+            list.add(value);
+        }
+
+
+    }
+
+    @Override
+    public String toString () {
+        return "requestType: " + requestType + ", txnId: " + txnId + ", name: " + name + ", formatType: " + formatType + ", amount: " + amount
+                + ", currency: " + currency + ", service: " + service + ", sourceCountryCode: " + sourceCountryCode + ", referenceNumbers: " + referenceNumbers
+                + ", executionDate: " + executionDate + ", forexRate: " + forexRate;
     }
 }

@@ -17,15 +17,18 @@ public class ProcessBean implements org.apache.camel.Processor{
  */
     public void process(Exchange exchange) throws Exception {
         String newBody ="";
-        System.out.println("++++++++++++++Started the process++++++++++");
+        System.out.println("ProcessBean:process:++++++++++++++Started the process++++++++++");
         String body= (String) exchange.getIn().getBody();
-        System.out.println("BODY in Process Bean: "+body);
-        Transaction transactionDetails=new Transaction();
-        transactionDetails.parse(body);
-        newBody= transactionDetails.validate();
-        System.out.println("new BODY in Process Bean:"+newBody);
+        System.out.println("ProcessBean:process:BODY in Process Bean: "+body);
+        if(body!=null) {
+            Transaction transactionDetails = new Transaction(body);
+            transactionDetails.parse();
+            transactionDetails.validate();
+            newBody = transactionDetails.getRestMessage();
+        }
+        System.out.println("ProcessBean:process:new BODY in Process Bean:"+newBody);
         exchange.getIn().setBody(newBody);
-        System.out.println("++++++++++++++End the process++++++++++");
+        System.out.println("ProcessBean:process:++++++++++++++End the process++++++++++");
     }
 
 }

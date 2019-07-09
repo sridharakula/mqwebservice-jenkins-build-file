@@ -1,9 +1,15 @@
 package com.mq.launcher.route;
 
+import com.mq.domain.ParseException;
+import com.mq.domain.ValidationException;
 import com.mq.processor.ProcessBean;
 import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.model.OnExceptionDefinition;
 import org.springframework.stereotype.Component;
+
+import javax.validation.executable.ValidateOnExecution;
 
 /*
     @author Sridhar Akula
@@ -26,9 +32,19 @@ public class MessageRouter extends RouteBuilder {
 
      */
 
-    public void configure() throws Exception {
-        System.out.println("--------Started the route.----------");
 
+
+    public void configure() throws Exception {
+        log.info("--------Started the route.----------");
+
+        onException(ParseException.class)
+                .log(LoggingLevel.ERROR,"Parsed exception");
+        onException(ValidationException.class)
+                .log(LoggingLevel.ERROR,"Validation exception");
+        onException(RuntimeException.class)
+                .log(LoggingLevel.ERROR,"Runtime exception");
+        onException(Exception.class)
+                .log(LoggingLevel.ERROR,"Generic Exception ");
 
         from("activemq:queue:testQueue")
                 .to("log:?level=INFO&showBody=true")
@@ -56,6 +72,6 @@ public class MessageRouter extends RouteBuilder {
                 //.to("https://restcountries.eu/rest/v2/alpha/USA")
                 .to("log:?level=INFO&showBody=true");
 */
-        System.out.println("--------Ended the route.----------");
+        log.info("--------Ended the route.----------");
     }
 }
