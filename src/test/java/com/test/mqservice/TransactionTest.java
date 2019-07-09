@@ -3,6 +3,9 @@ package com.test.mqservice;
 import com.mq.domain.ParseException;
 import com.mq.domain.Transaction;
 import com.mq.domain.ValidationException;
+import com.mq.route.MessageRouter;
+import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.test.junit4.CamelTestSupport;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -15,7 +18,13 @@ import java.util.StringTokenizer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-public class TransactionTest {
+public class TransactionTest extends CamelTestSupport {
+
+    @Override
+    protected RouteBuilder createRouteBuilder() throws Exception {
+        return new MessageRouter();
+
+    }
 
     @Test
     @Description("Check for Valid Message")
