@@ -1,4 +1,4 @@
-package com.mq.launcher.route;
+package com.mq.route;
 
 import com.mq.domain.ParseException;
 import com.mq.domain.ValidationException;
@@ -6,17 +6,13 @@ import com.mq.processor.ProcessBean;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.model.OnExceptionDefinition;
-import org.springframework.stereotype.Component;
 
-import javax.validation.executable.ValidateOnExecution;
 
 /*
     @author Sridhar Akula
     This class is to build the Route to process the message from JMS Queue.
 */
 
-@Component
 public class MessageRouter extends RouteBuilder {
 
     /*
